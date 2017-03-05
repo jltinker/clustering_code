@@ -4,14 +4,14 @@ command-line usage:
 
 wp_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat
 
-galdat1 - galaxy input file. Format:
+galdat1 - galaxy input file. Format: Ascii
   1) ra [deg]
   2) dec [deg]
   3) redshift
   4) total weight of this target
   5) isurvey (just in case target sample combines two surveys, like BOSS+eBOSS)
   
-rand1.dat - randoms. Format:
+rand1.dat - randoms. Format: Ascii
   1) ra [deg]
   2) dec [deg]
   
@@ -27,3 +27,11 @@ rmax - maximum r_r value
 nrbin - number of log(r_p) bins
 njack_per_side - for jackknife sampling: the same is divided into ra/dec partitions, for a total of (njack_per_side)^2 jackknife samples
 pi_max - value of pi out to which w_p is integrated.
+
+Output--> standard out. Columns are:
+  1)  mean w_p (pair-weighted over all pi)
+  2)  w_p
+  3) err w_p
+  4) number of DD pairs
+  5) mean w_p from all the jackknifes (for cross-check purposes)
+  
