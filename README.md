@@ -2,7 +2,7 @@
 
 command-line usage:
 
-wp_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat
+wp_LS_weight_omp galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat
 
 galdat1 - galaxy input file. Format: Ascii
   1) ra [deg]
