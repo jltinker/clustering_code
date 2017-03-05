@@ -15,7 +15,7 @@
 #define Q1 -1.0
 #define QZ0 0.1
 #define COLLISION_ANGLE (62./3600.*3.14159/180.)
-
+#define RAD (180/PI)
 #define ind(i,j) (i*njack+j)
 #define mabs(A) ((A) < 0.0 ? -(A) : (A))
 
@@ -85,6 +85,7 @@ int main(int argc, char **argv)
   float xi_err, xi_jack, xi_bar;
   double ngal_tmp, nrand_tmp;
   float xi_data[30], xij[200*200][30], covar[30][30];
+  float jack_ralo[1000], jack_rahi[1000], jack_declo[1000], jack_dechi[1000];
   FILE *fpcovar, *fpjack;
   int *jackvect,*rjackvect, *isurvey;
   double ngalx,xx;
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
   int irank, nrank, flag=0;
   float t0,t1,ctime1,ctime2,*rx,**pix;
 
-  int p, ix,iy,iz,iix,iiy,iiz,ir,nbr,iiix,iiiy,iiiz;
+  int p, ix,iy,iz,iix,iiy,iiz,ir,nbr,iiix,iiiy,iiiz, ntot;
   float rmax2, side, side2, sinv;
 
   // using actual redshift, not cz
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
       z[j] = z1*cos(theta);
       
       gal_ra[j] = phi;
-      gal_dec[j] = cos(theta);
+      gal_dec[j] = gal_dec2[j];
       gal_z[j] = zz1;
       indx[j] = j;
     }
@@ -277,9 +278,9 @@ int main(int argc, char **argv)
     printf("GAL %f %f %d\n",gal_ra[i],gal_dec2[i],jackvect[i]);
 
 
-  // NBNBNB replace temporarily
   for(i=1;i<=ngal;++i)
     {
+      // NBNBNB replace temporarily
       //jackvect[i] = isurvey[i];
       isurvey[i] = 1;
     }
@@ -308,7 +309,7 @@ int main(int argc, char **argv)
       //fscanf(fp,"%d",&rjackvect[i]);
       yg[i] = ry1[i];
       indx[i] = i;
-      //rjackvect[i] = 1; //NB: don't currently have a jackknife samples made up yet.
+      rjackvect[i] = -1; //NB: don't currently have a jackknife samples made up yet.
       ran_ra[i] = rx1[i]*PI/180.;
       ran_dec[i] = ry1[i]*PI/180.;
       phi = rx1[i]*(PI/180.0);
@@ -334,36 +335,91 @@ int main(int argc, char **argv)
   sort2(nrand1, yg, indx);
 
   // now go in quintiles of dec and sort by ra.
-  nby5 = nrand1/njack1;
+  nby5 = nrand1*1./njack1*1.;
+
+  ntot = 0;
   for(i=0;i<njack1;++i)
     {
       for(n=0,j=i*nby5+1;j<=(i+1)*nby5;++j)
 	{
 	  n++;
+	  ntot++;
 	  id = indx[j];
 	  yg[n] = ran_ra[id];
 	  subindx[n] = id;
+	  if(i+1==njack1 && ntot==nrand1)break;
 	}
       // sort by ra
       sort2(n,yg,subindx);
       // now divide these into groups of five
-      nsby5 = n/njack1;
-      for(ii=0;ii<njack1;++ii)
-	for(k=0,j=ii*nsby5+1;j<=(ii+1)*nsby5;++j)
+      nsby5 = n/njack1+1;
+      for(k=0,ii=0;ii<njack1;++ii)
+	for(j=ii*nsby5+1;j<=(ii+1)*nsby5;++j)
 	  {
 	    k++;
 	    id = subindx[j];
 	    rjackvect[id] = i + ii*njack1;
+	    if(k==n)break;
 	  }
     }
   for(i=1;i<=-nrand1;++i)
-    printf("RAND %f %f %d\n",ran_ra[i],ran_dec[i],rjackvect[i]);
+    if(rjackvect[i]==0)
+      printf("RAND %f %f %d\n",ran_ra[i]*RAD,ran_dec[i],rjackvect[i]);
 
   // temp array
   free_vector(xg,1,nrand1);
   free_vector(yg,1,nrand1);
   free_ivector(subindx,1,nrand1);
   free_ivector(indx,1,nrand1);
+
+  // NEW-- put the gals into the jacks defined spatially by the randoms
+  for(i=0;i<njack_tot;++i)
+    {
+      jack_ralo[i] = 10000;
+      jack_declo[i] = 10000;
+      jack_rahi[i] = -1000;
+      jack_dechi[i] = -1000;
+      for(j=1;j<=nrand1;++j)
+	{
+	  if(rjackvect[j]!=i)continue;
+	  if(ran_ra[j]<jack_ralo[i])jack_ralo[i] = ran_ra[j];
+	  if(ran_dec[j]<jack_declo[i])jack_declo[i] = ran_dec[j];
+	  if(ran_ra[j]>jack_rahi[i])jack_rahi[i] = ran_ra[j];
+	  if(ran_dec[j]>jack_dechi[i])jack_dechi[i] = ran_dec[j];
+	}
+    }
+  // for any rands not in the jacks, find their location
+  k=0;
+  for(i=1;i<=nrand1;++i)
+    {
+      if(rjackvect[i]>=0)continue;
+      for(j=0;j<-njack_tot;++j)
+	{
+	  if(ran_ra[i]>=jack_ralo[j] && ran_ra[i]<jack_rahi[j])
+	    if(ran_dec[i]>=jack_declo[j] && ran_dec[i]<jack_dechi[j])
+	      {
+		rjackvect[i] = j; break;
+	      }
+	}
+      if(rjackvect[i] == -1){ k++; } 
+    }
+  fprintf(stderr,"%d randoms still with no home!\n",k);
+
+  k=0;
+  for(i=1;i<=ngal;++i)
+    {
+      jackvect[i] =-1;
+      for(j=0;j<njack_tot;++j)
+	{
+	  if(gal_ra[i]>=jack_ralo[j] && gal_ra[i]<jack_rahi[j])
+	    if(gal_dec[i]>=jack_declo[j] && gal_dec[i]<jack_dechi[j])
+	      {
+		jackvect[i] = j; break;
+	      }
+	}
+      if(jackvect[i] == -1){ k++; jackvect[i] = jackvect[i+1]; } 
+    }
+  fprintf(stderr,"%d gals with no jack\n",k);
 
  SKIP_JACKS:
 
@@ -506,6 +562,7 @@ int main(int argc, char **argv)
 	  // only count this pair if both points within the same subsample
 	  id = rjackvect[i];
 	  id2 = rjackvect[j];
+	  if(id==-1 || id2==-1)continue;
 	  //if(id==id2) nxj[id2][ibin][jbin]+=1;
 	  //continue;
 	  nxj[id][ibin][jbin]+=1;
@@ -592,6 +649,10 @@ int main(int argc, char **argv)
   j=0;
   for(i=0;i<njack_tot;++i)
     j+=rancnt_jack[i];
+  for(i=0;i<-njack_tot;++i)
+    printf("%d %d %.0f %f %f %f %f\n",i,rancnt_jack[i],galcnt_jack[i],
+	   jack_ralo[i]*RAD, jack_rahi[i]*RAD, jack_declo[i]*RAD, 
+	   jack_dechi[i]*RAD);
   fprintf(stderr,"done with rancnt %d %d\n",nrand1,j);
 
 
@@ -788,6 +849,7 @@ int main(int argc, char **argv)
 
 	id = jackvect[i];
 	id2 = rjackvect[j];
+	  if(id==-1 || id2==-1)continue;
 	//if(id==id2)ndj[id2][ibin][jbin]+=weight;
 	//continue;
 	ndj[id][ibin][jbin]+=weight;
