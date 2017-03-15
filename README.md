@@ -2,6 +2,8 @@
 
 command-line usage:
 
+required libraries: in the initial commit I forgot that I call a library "cutil" in linking. This is a personal library, and it's been checked in as "lib" in my github. You just need to edit the path to your local libraries in the Makefile.
+
 wp_LS_weight_omp galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat
 
 galdat1 - galaxy input file. Format: Ascii
