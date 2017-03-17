@@ -973,6 +973,8 @@ int main(int argc, char **argv)
     }
   fclose(fp);
 
+  exit(0);
+
   /* Output the covariance matrix for the monopole
    */
   if(argc>4)
