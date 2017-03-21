@@ -86,8 +86,8 @@ int main(int argc, char **argv)
   float xi_err, xi_jack, xi_bar, xi_jack_mono, xi_jack_quad, xi_err_mono, 
     xi_err_quad, xi_bar_mono, xi_bar_quad, xi_mono, xi_quad, DELTA_PHI;
   double ngal_tmp, nrand_tmp;
-  float xi_data[30], xij[200*200][100], xijm[200*200][100], xijq[200*200][100], 
-    covar[100][100], xi_data_mono[100], xi_data_quad[100];
+  float xi_data[30], xij[200*200][100], xijm[500][100], xijq[500][100], 
+    covar[100][100], xi_data_mono[100], xi_data_quad[100], cov[100][100];
   float jack_ralo[1000], jack_rahi[1000], jack_declo[1000], jack_dechi[1000];
   FILE *fpcovar, *fpjack;
   int *jackvect,*rjackvect, *isurvey;
@@ -970,7 +970,7 @@ int main(int argc, char **argv)
     }
   fclose(fp);
 
-  exit(0);
+  //exit(0);
 
   /* Output the covariance matrix for the monopole
    */
@@ -985,11 +985,11 @@ int main(int argc, char **argv)
     for(i=1;i<=nr;++i)
       for(j=1;j<=nr;++j)
 	{
-	  covar[i][j] = 0;
+	  xi_err_mono = 0;
 	  for(ijack=0;ijack<njack_tot;++ijack)
-	    covar[i][j] += (xi_data_mono[i] - xijm[ijack][i])*(xi_data_mono[j] - xijm[ijack][j]);
-	  covar[i][j] *= (njack_tot-1.0)/njack_tot;
-	  fprintf(fp,"%d %d %e\n",i,j,covar[i][j]);
+	    xi_err_mono += (xi_data_mono[i] - xijm[ijack][i])*(xi_data_mono[j] - xijm[ijack][j]);
+	  xi_err_mono *= (njack_tot-1.0)/njack_tot;
+	  fprintf(fp,"%d %d %e\n",i,j,xi_err_mono);
 	}
     fclose(fp);
 
@@ -1008,11 +1008,11 @@ int main(int argc, char **argv)
     for(i=1;i<=nr;++i)
       for(j=1;j<=nr;++j)
 	{
-	  covar[i][j] = 0;
+	  cov[i][j] = 0;
 	  for(ijack=0;ijack<njack_tot;++ijack)
-	    covar[i][j] += (xi_data_quad[i] - xijq[ijack][i])*(xi_data_quad[j] - xijq[ijack][j]);
-	  covar[i][j] *= (njack_tot-1.0)/njack_tot;
-	  fprintf(fp,"%d %d %e\n",i,j,covar[i][j]);
+	    cov[i][j] += (xi_data_quad[i] - xijq[ijack][i])*(xi_data_quad[j] - xijq[ijack][j]);
+	  cov[i][j] *= (njack_tot-1.0)/njack_tot;
+	  fprintf(fp,"%d %d %e\n",i,j,cov[i][j]);
 	}
     fclose(fp);
 }
