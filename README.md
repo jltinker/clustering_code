@@ -21,14 +21,14 @@ The redshifts of the randoms are drawn randomly from the data.
 
 RR_file is a filename where the random counts are printed out. Since the same rand file can be used multiple times (and takes the majority of the CPU time) this can be read back in from this file. Currently the read-in is NOT IMPLEMENTED. If this file exists, it will be overwritten.
 
-covarfile - filename for outputting the covariance matrix
-collision_weight1 - if two galaxies are closer than 62 arcsecs, the pair is upweighted by this value (for survey==1)
-collision_weight2 - if two galaxies are closer than 62 arcsecs, the pair is upweighted by this value (for survey==2)
-rmin - minimum r_p value
-rmax - maximum r_r value
-nrbin - number of log(r_p) bins
-njack_per_side - for jackknife sampling: the same is divided into ra/dec partitions, for a total of (njack_per_side)^2 jackknife samples
-pi_max - value of pi out to which w_p is integrated.
+- covarfile - filename for outputting the covariance matrix
+- collision_weight1 - if two galaxies are closer than 62 arcsecs, the pair is upweighted by this value (for survey==1)
+- collision_weight2 - if two galaxies are closer than 62 arcsecs, the pair is upweighted by this value (for survey==2)
+- rmin - minimum r_p value
+- rmax - maximum r_r value
+- nrbin - number of log(r_p) bins
+- njack_per_side - for jackknife sampling: the same is divided into ra/dec partitions, for a total of (njack_per_side)^2 - - jackknife samples
+- pi_max - value of pi out to which w_p is integrated.
 
 Output--> standard out. Columns are:
   1)  mean w_p (pair-weighted over all pi)
@@ -45,11 +45,11 @@ ximulti_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [col
 
 Where all the inputs are the same, only now there is no pi_max (since no line-of-sight integration. The stdout of the code is:
 
-r [Mpc/h]
-xi_mono
-xi_mono_err
-xi_quad
-xi_quad_err
+ 1) r [Mpc/h]
+ 2) xi_mono
+ 3) xi_mono_err
+ 4) xi_quad
+ 5) xi_quad_err
 
 There are also two covariance matrix files that are outputted:
 
