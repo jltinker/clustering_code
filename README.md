@@ -37,3 +37,21 @@ Output--> standard out. Columns are:
   4) number of DD pairs
   5) mean w_p from all the jackknifes (for cross-check purposes)
   
+---------------------------------------------------------------------------------
+
+I have added code for doing the redshift-space multipoles. The command-line arguments are nearly identical:
+
+ximulti_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side]> ximulti.dat
+
+Where all the inputs are the same, only now there is no pi_max (since no line-of-sight integration. The stdout of the code is:
+
+r [Mpc/h]
+xi_mono
+xi_mono_err
+xi_quad
+xi_quad_err
+
+There are also two covariance matrix files that are outputted:
+
+[covarfile]_mono and [covarfile]_quad
+
