@@ -116,15 +116,15 @@ int main(int argc, char **argv)
 
   if(argc<4)
     {
-      fprintf(stderr,"wp_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat\n");
+      fprintf(stderr,"wp_LS_weight galdat1 galdat2 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat\n");
       exit(0);
     }
 
   COLLISION_WEIGHT = 2.64;
-  if(argc>5)
-    COLLISION_WEIGHT = atof(argv[5]);
   if(argc>6)
-    COLLISION_WEIGHT2 = atof(argv[6]);
+    COLLISION_WEIGHT = atof(argv[6]);
+  if(argc>7)
+    COLLISION_WEIGHT2 = atof(argv[7]);
   fprintf(stderr,"collision_weight= %f\n",COLLISION_WEIGHT);
   fprintf(stderr,"collision_weight2= %f\n",COLLISION_WEIGHT2);
 
@@ -136,23 +136,23 @@ int main(int argc, char **argv)
   zmin = 0;
   PI_MAX = zmax = 60;
   if(argc>11)
-    PI_MAX=zmax=atof(argv[11]);
+    PI_MAX=zmax=atof(argv[12]);
   nz = (int)zmax;
   deltaz = (zmax-zmin)/nz;
 
   // let's see if we want to input the binning
   if(argc>7)
-    rmin = atof(argv[7]);
+    rmin = atof(argv[8]);
   if(argc>8)
-    rmax = atof(argv[8]);
+    rmax = atof(argv[9]);
   if(argc>9)
-    nr = atoi(argv[9]);
+    nr = atoi(argv[10]);
   dlogr = log(rmax/rmin)/(nr);
   fprintf(stderr,"rmin= %f, rmax= %f, nrbin= %d\n",rmin, rmax, nr);
 
   njack1 = 5;
   if(argc>10)
-    njack1 = atoi(argv[10]);
+    njack1 = atoi(argv[11]);
   njack_tot=njack1*njack1;
   fprintf(stderr,"Njack1= %d (total jacks= %d)\n",njack1, njack_tot);
 
@@ -179,10 +179,6 @@ int main(int argc, char **argv)
     for(j=1;j<=nr;++j)
       for(k=1;k<=nz;++k)
 	npairs_jack[i][j][k] = npairs_dr1_jack[i][j][k] = 0;
-
-  // read in all galaxies
-  //fp = openfile(argv[1]);
-  //ngal_tot = filesize(fp);
 
   // mock input
   fp = openfile(argv[1]);
@@ -241,6 +237,67 @@ int main(int argc, char **argv)
   fprintf(stderr,"Read [%d/%d] galaxies from file [%s]\n",j,ngal,argv[1]);
   fflush(stdout);
   fclose(fp);
+  
+  //--- READ IN THE SECOND DATA FILE ----
+
+  // mock input
+  fp = openfile(argv[2]);
+  ngal = filesize(fp);
+  
+  x = vector(1,ngal);
+  y = vector(1,ngal);
+  z = vector(1,ngal);
+  jackvect = ivector(1,ngal);
+  isurvey = ivector(1,ngal);
+  gweight = vector(1,ngal);
+  gal_ra = vector(1,ngal);
+  gal_dec = vector(1,ngal);
+  gal_dec2 = vector(1,ngal);
+  gal_z = vector(1,ngal);
+  
+  // jackknife array
+  jackvect = ivector(1,ngal);
+
+  // temp array
+  xg = vector(1,ngal);
+  yg = vector(1,ngal);
+  subindx = ivector(1,ngal);
+  indx = ivector(1,ngal);
+
+
+
+  for(j=1;j<=ngal;++j)
+    {
+      fscanf(fp,"%f %f %f %f %d",&x1,&y1,&z1,&gweight[j],&isurvey[j]);
+      xg[j] = x1;
+      yg[j] = y1;
+
+      jackvect[j] = 1;
+      z1 /= SPEED_OF_LIGHT;
+      fgets(aa,1000,fp);
+
+      gal_dec2[j] = y1*PI/180.;      
+      phi = x1;
+      theta = PI/2.0 - y1;
+
+      // assuming RA/DEC input in degrees
+      phi = x1*PI/180.0;
+      theta = PI/2.0 - y1*PI/180.0;
+      
+      zz1 = z1;
+      z1 = redshift_distance(z1);
+      
+      x[j] = z1*sin(theta)*cos(phi);
+      y[j] = z1*sin(theta)*sin(phi);
+      z[j] = z1*cos(theta);
+      
+      gal_ra[j] = phi;
+      gal_dec[j] = gal_dec2[j];
+      gal_z[j] = zz1;
+      indx[j] = j;
+    }
+  fprintf(stderr,"Read [%d/%d] galaxies from file [%s]\n",j,ngal,argv[1]);
+  fflush(stdout);
   
 
   // sort everything in dec (xg is not actually used)

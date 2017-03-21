@@ -182,10 +182,6 @@ int main(int argc, char **argv)
       for(k=1;k<=nz;++k)
 	npairs_jack[i][j][k] = npairs_dr1_jack[i][j][k] = 0;
 
-  // read in all galaxies
-  fp = openfile(argv[1]);
-  ngal_tot = filesize(fp);
-
   // mock input
   fp = openfile(argv[1]);
   ngal = filesize(fp);
@@ -242,6 +238,7 @@ int main(int argc, char **argv)
     }
   fprintf(stderr,"Read [%d/%d] galaxies from file [%s]\n",j,ngal,argv[1]);
   fflush(stdout);
+  fclose(fp);
 
 
   // sort everything in dec (xg is not actually used)
