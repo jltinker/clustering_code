@@ -45,11 +45,11 @@ ximulti_LS_weight galdat1 rand1.dat RR_file [covarfile] [collision_weight1] [col
 
 Where all the inputs are the same, only now there is no pi_max (since no line-of-sight integration. The stdout of the code is:
 
-r [Mpc/h]
-xi_mono
-xi_mono_err
-xi_quad
-xi_quad_err
+ 1) r [Mpc/h]
+ 2) xi_mono
+ 3) xi_mono_err
+ 4) xi_quad
+ 5) xi_quad_err
 
 There are also two covariance matrix files that are outputted:
 
