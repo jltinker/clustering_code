@@ -55,3 +55,13 @@ There are also two covariance matrix files that are outputted:
 
 [covarfile]_mono and [covarfile]_quad
 
+
+----------------------------------------------------------------------------------
+
+I have now added cross-correlation for the wp code. Usage is:
+
+wp_LS_weight galdat1 galdat2 rand1.dat RR_file [covarfile] [collision_weight1] [collision_weight2] [rmin] [rmax] [nrbin] [njack_per_side] [pi_max]> wp.dat
+
+Here the usage is the same as the regular WP code, only now we have a galdata2 entry (expecting the same format as the first galdata1 entry). The output is the same as well. 
+
+NB: The wp calculation is (D1D2-D1R-D2R-RR)/RR, which assumes that the two data samples have the same angular and redshift distribution.
