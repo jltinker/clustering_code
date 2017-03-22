@@ -640,7 +640,7 @@ int main(int argc, char **argv)
     }
   //this is the WEIGHTED number of galaxies
   ngalx2 = 0;
-  for(i=1;i<=ngal;++i)
+  for(i=1;i<=ngal2;++i)
     {
       ngalx2 += gweight2[i];
       id = jackvect2[i];
