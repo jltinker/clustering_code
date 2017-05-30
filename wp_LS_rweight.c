@@ -89,7 +89,7 @@ int main(int argc, char **argv)
   float xi_data[30], xij[200*200][30], covar[30][30];
   float jack_ralo[1000], jack_rahi[1000], jack_declo[1000], jack_dechi[1000];
   FILE *fpcovar, *fpjack;
-  int *jackvect,*rjackvect, *isurvey, RANDWEIGHTS;
+  int *jackvect,*rjackvect, *isurvey, RANDWEIGHTS=1;
   double ngalx,xx;
 
   double **nd, ***ndj;
