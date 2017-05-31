@@ -25,5 +25,10 @@ wp_LS_rweight_omp:	$(OBJS1724)
 	$(CC) -o $@ $(OBJS1724) $(LIB)
 	cp -f $@ $(HOME)/exec/$@
 
+OBJS1725 = wp_LS_weight_fkp.o  qromo.o midpnt.o polint.o meshlink2.o nbrsfind2.o time.o sort2.o
+wp_LS_weight_fkp_omp:	$(OBJS1725)
+	$(CC) -o $@ $(OBJS1725) $(LIB)
+	cp -f $@ $(HOME)/exec/$@
+
 clean:
 	rm -f *.o
