@@ -53,7 +53,7 @@ int main(int argc, char **argv)
   char aa[1000], fname[1000];
 
   float rmin, rmax, dlogr, r, dx, dy, dz, xt, rcube = 125, BUF = 20, 
-    x1, r1, y1, z1, zz1, ra1, x11, kcorr, deltaz;
+    x1, r1, y1, z1, zz1, ra1, x11, kcorr, deltaz,r2;
   int nr = 14;
   int ngal,ngal2,i,j,k,nmock,ibin,**nrand,nrandoms,**npairs_dr2, ngal_tot;
   float *x,*y,*z;
@@ -490,8 +490,8 @@ int main(int argc, char **argv)
     exit(0);
     */
 
-#pragma omp parallel  shared(rx1,ry1,rz1,meshpartsr, meshstartr,nrand1,flag) \
-  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2)
+#pragma omp parallel  shared(rx1,ry1,rz1,meshpartsr, meshstartr,nrand1) \
+  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2,flag)
 {
 
     irank=omp_get_thread_num();
@@ -516,15 +516,77 @@ int main(int argc, char **argv)
     indx=malloc(nrand1*sizeof(int));
     rsqr=malloc(nrand1*sizeof(float));
 
+    // make individual versions of the mesh arrays
+    meshpartsr2 = ivector(0,nrand1-1);
+    for(i=0;i<nrand1;++i)
+      meshpartsr2[i] = meshpartsr[i];
+    meshstartr2=(int ***)i3tensor(0,nmeshr-1,0,nmeshr-1,0,nmeshr-1);
+    for(i=0;i<nmeshr;++i)
+      for(j=0;j<nmeshr;++j)
+	for(k=0;k<nmeshr;++k)
+	  meshstartr2[i][j][k] = meshstartr[i][j][k];
 
 #pragma omp barrier
 
     for(i=1+irank;i<=nrand1;i+=nrank) {
-
+      
       if(i%10000==1 && !irank){ fprintf(stderr,"%d\n",i); }
       nbrmax=nrand1;
-      nbrsfind2(box_min,box_max,rsearch,nmeshr,rx1[i],ry1[i],rz1[i],&nbrmax,indx,rsqr,
-		&rx1[1],&ry1[1],&rz1[1],meshpartsr,meshstartr,-1);
+       nbrsfind2(box_min,box_max,rsearch,nmeshr,rx1[i],ry1[i],rz1[i],&nbrmax,indx,rsqr,
+		 &rx1[1],&ry1[1],&rz1[1],meshpartsr,meshstartr,-1);
+
+      //--------------------------
+       /*
+      rmax2=rsearch*rsearch;
+      nbrmax=0;
+      ir=(int)(nmeshr*rsearch/(box_max-box_min))+1;
+      
+      ix=(int)(nmeshr*(rx1[i]-box_min)/(box_max-box_min));
+      iy=(int)(nmeshr*(ry1[i]-box_min)/(box_max-box_min));
+      iz=(int)(nmeshr*(rz1[i]-box_min)/(box_max-box_min));
+
+      for(iix=-ir;iix<=ir;iix++)
+	for(iiy=-ir;iiy<=ir;iiy++)
+	  for(iiz=-ir;iiz<=ir;iiz++){
+	    iiix=(ix+iix+nmeshr)%nmeshr ;
+	    iiiy=(iy+iiy+nmeshr)%nmeshr ;
+	    iiiz=(iz+iiz+nmeshr)%nmeshr ;
+	    p=meshstartr2[iiix][iiiy][iiiz] ;// +1 bc 0-indexed to start
+     
+	    while(p>=0){
+	      // remove double-counting. if xcorring, just set i0=-1
+	      if(p<=-1) {
+		p=meshpartsr2[p];
+		continue;
+	      }
+	      
+	      dx=mabs(rx1[i]-rx1[p+1]) ;
+	      dy=mabs(ry1[i]-ry1[p+1]) ;
+	      dz=mabs(rz1[i]-rz1[p+1]) ;
+	      
+	      dx =10;
+	      dy = 30;
+	      dz = 50;
+	      r2=dx*dx+dy*dy+dz*dz ;
+
+
+	      if(r2<=rmax2) {
+		indx[nbrmax]=p;
+		rsqr[nbrmax]=r2;
+		nbrmax++;
+	      }
+	      if(nbrmax>nrand1){
+		fprintf(stderr,"nbrsfind2>too many particles in indx list\n");
+		fprintf(stderr,"nbrsfind2>reset nbrmax and try again\n");
+		fprintf(stderr,"nbr = %d\n",nbr);
+		exit(-1) ;
+	      }
+	      p=meshpartsr2[p];
+	    }
+	  }
+*/
+      //-----------------
+
 
       for(j1=0;j1<nbrmax;++j1)
 	{
@@ -572,12 +634,16 @@ int main(int argc, char **argv)
 
     free(indx);
     free(rsqr);
+    free_ivector(meshpartsr2,0,nrand1-1);
+    free_i3tensor(meshstartr2,0,nmesh-1,0,nmesh-1,0,nmesh-1);
 
     //system("date");
+    flag = 0;
     if(!flag) {
       flag = 1;
       ctime2 = omp_get_wtime();
-      //printf("TT %.2f\n",ctime2-ctime1);
+      printf("TT%d %.2f\n",irank,ctime2-ctime1);
+      fflush(stdout);
     }
 
     // now combine all the counts
