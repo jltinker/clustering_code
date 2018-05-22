@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 
   int p, ix,iy,iz,iix,iiy,iiz,ir,nbr,iiix,iiiy,iiiz, ntot;
   float rmax2, side, side2, sinv;
+  int OUTPUT_JACKS=0;
 
   // using actual redshift, not cz
   SPEED_OF_LIGHT = 1;
@@ -153,6 +154,12 @@ int main(int argc, char **argv)
   njack1 = 5;
   if(argc>10)
     njack1 = atoi(argv[10]);
+  if(njack1 < 0 )
+    {
+      njack1 *= -1;
+      OUTPUT_JACKS = 1;
+      fpjack = fopen("wp_jacks.dat","w");
+    }
   njack_tot=njack1*njack1;
   fprintf(stderr,"Njack1= %d (total jacks= %d)\n",njack1, njack_tot);
 
@@ -933,8 +940,6 @@ int main(int argc, char **argv)
 	  xi_jack *= 2;
 	  if(isnan(xi_jack))xi_jack=xi;
 	  xi_bar += xi_jack/njack_tot;
-	  if(i==-nr)
-	    printf("%d %d %e %e %e %.0f %d\n",i,k,xi_jack,xi,xi_bar,galcnt_jack[k],rancnt_jack[k]);
 	}
       xi_data[i] = xi_bar;
 
@@ -957,6 +962,8 @@ int main(int argc, char **argv)
 	  if(isnan(xi_jack))xi_jack=xi;
 	  xi_err += (xi_jack-xi_bar)*(xi_jack-xi_bar);
 	  xij[k][i]  = xi_jack;
+	  if(OUTPUT_JACKS)
+	    fprintf(fpjack, "%d %d %e %e %e %.0f %d\n",i,k,xi_jack,xi_bar,xi,galcnt_jack[k],rancnt_jack[k]);
 	}
       xi_err = sqrt((njack_tot-1.)/njack_tot*xi_err);
 

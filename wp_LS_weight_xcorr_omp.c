@@ -1096,11 +1096,9 @@ int main(int argc, char **argv)
       xi_err = sqrt((njack_tot-1.)/njack_tot*xi_err);
 
       printf("%11.5f %.4e %.4e %10.1f %.4e",r,xi,xi_err,npairs_tot,xi_bar);
-      if(OUTPUT_JACKS) {
-	for(k=0;k<njack_tot;++k)
-	  printf(" %.4e",xij[k][i]);
-      }
       printf("\n");
+      if(OUTPUT_JACKS)
+	fprintf(fpjack, "%d %d %e %e %e %.0f %d\n",i,k,xi_jack,xi_bar,xi,galcnt_jack[k],rancnt_jack[k]);
     }
   fclose(fp);
 
