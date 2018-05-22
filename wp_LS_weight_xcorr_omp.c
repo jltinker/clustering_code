@@ -160,6 +160,7 @@ int main(int argc, char **argv)
     if(njack1<0) {
       njack1 *= -1;
       OUTPUT_JACKS = 1;
+      fpjack = fopen("wpx_jacks.dat","w");
     }
   }
   njack_tot=njack1*njack1;
