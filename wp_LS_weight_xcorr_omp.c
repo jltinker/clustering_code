@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   float maglo=-10, maghi=-30, zlo=0, zhi=1;
   float zmin, zmax, theta;
   int nz, jbin, ntmp;
-  int CALC_RR_COUNTS=0;
+  int CALC_RR_COUNTS=0,OUTPUT_JACKS=0;
   int input_code = 2;
 
   float lx,ly,lz,pi,phi, PI_MAX, weight, *gweight, *gweight2;
@@ -154,8 +154,14 @@ int main(int argc, char **argv)
   fprintf(stderr,"rmin= %f, rmax= %f, nrbin= %d\n",rmin, rmax, nr);
 
   njack1 = 5;
-  if(argc>10)
+  OUTPUT_JACKS = 0;
+  if(argc>10) {
     njack1 = atoi(argv[11]);
+    if(njack1<0) {
+      njack1 *= -1;
+      OUTPUT_JACKS = 1;
+    }
+  }
   njack_tot=njack1*njack1;
   fprintf(stderr,"Njack1= %d (total jacks= %d)\n",njack1, njack_tot);
 
@@ -1089,7 +1095,12 @@ int main(int argc, char **argv)
 	}
       xi_err = sqrt((njack_tot-1.)/njack_tot*xi_err);
 
-      printf("%11.5f %.4e %.4e %10.1f %.4e\n",r,xi,xi_err,npairs_tot,xi_bar);
+      printf("%11.5f %.4e %.4e %10.1f %.4e",r,xi,xi_err,npairs_tot,xi_bar);
+      if(OUTPUT_JACKS) {
+	for(k=0;k<njack_tot;++k)
+	  printf(" %.4e",xij[k][i]);
+      }
+      printf("\n");
     }
   fclose(fp);
 

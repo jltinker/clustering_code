@@ -491,7 +491,7 @@ int main(int argc, char **argv)
     */
 
 #pragma omp parallel  shared(rx1,ry1,rz1,meshpartsr, meshstartr,nrand1) \
-  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2,flag)
+  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2,flag,phi)
 {
 
     irank=omp_get_thread_num();

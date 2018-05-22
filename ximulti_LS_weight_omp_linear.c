@@ -28,7 +28,7 @@ double redshift_distance(double z);
 double func_dr1(double z);
 float random_radial_position(float zlo, float zhi);
 float angular_separation(float a1, float d1, float a2, float d2);
-float random_redshift_from_data(int n, float *z);
+float random_redshift_from_data(int n, float *z, float *w, float *w0);
 float collision_weight(float theta, int iflag);
 
 // external functions
@@ -55,15 +55,15 @@ int main(int argc, char **argv)
   float rmin, rmax, dlogr, r, dx, dy, dz, xt, rcube = 125, BUF = 20, 
     x1, r1, y1, z1, zz1, ra1, x11, kcorr, deltaz,r2;
   int nr = 14;
-  int ngal,ngal2,i,j,k,nmock,ibin,**nrand,nrandoms,**npairs_dr2, ngal_tot;
-  float *x,*y,*z;
+  int ngal,ngal2,i,j,k,nmock,ibin,nrandoms,**npairs_dr2, ngal_tot;
+  float *x,*y,*z, *fkp;
   float *x2,*y2,*z2;
-  float *rx1,*rx2,*ry1,*ry2,*rz1,*rz2;
+  float *rx1,*rx2,*ry1,*ry2,*rz1,*rz2, *rw2;
   float *xg, *yg;
   int nrand1, nrand2;
   double npairs_tot;
   double *rbar,nratio,DR1,DR2,RR,DD,xi,**pibar;
-  double **npairs, **npairs_dr1;
+  double **npairs, **npairs_dr1, **nrand;
 
   float maglo=-10, maghi=-30, zlo=0, zhi=1;
   float zmin, zmax, theta;
@@ -74,14 +74,15 @@ int main(int argc, char **argv)
   float lx,ly,lz,pi,phi, PI_MAX, weight, *gweight;
 
   //variables for jackknife calculations
-  int ***nrand_jack, **nx, ***nxj, njack1, nby5,nsby5,ii, *subindx, ijack, n;
+  double **nx, ***nxj, ***nrand_jack;
+  int  njack1, nby5,nsby5,ii, *subindx, ijack, n;
   double ***npairs_dr1_jack, ***npairs_jack;
   int ijack1, ijack2, jjack, njack_ra, njack_dec, njack_tot, njack=10;
   float dx_jack=15, dy_jack=0.1, ra_min=100, dec_min=-0.07;
   float *gal_ra, *gal_dec, *gal_dec2;
-  float *ran_ra, *ran_dec;
+  float *ran_ra, *ran_dec, *randw;
   int id, idp, id2;
-  int *rancnt_jack;
+  double *rancnt_jack;
   float *galcnt_jack;
   float xi_err, xi_jack, xi_bar, xi_jack_mono, xi_jack_quad, xi_err_mono, 
     xi_err_quad, xi_bar_mono, xi_bar_quad, xi_mono, xi_quad, DELTA_PHI;
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
   float jack_ralo[1000], jack_rahi[1000], jack_declo[1000], jack_dechi[1000];
   FILE *fpcovar, *fpjack;
   int *jackvect,*rjackvect, *isurvey;
-  double ngalx,xx;
+  double ngalx,xx, nrandx;
 
   double **nd, ***ndj;
 
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
   float *rsqr, box_min, box_max, rmax_small, rmax_small_sqr, xmin, xmax, rsearch;
   int *meshparts, ***meshstart,nmesh,meshfac,nbrmax,*indx;
   int *meshpartsr, ***meshstartr,nmeshr,meshfacr,j1,i1;
-  int *meshpartsr2, ***meshstartr2,nmeshr2,meshfacr2, ismall, nrand1_large, nrandx;
+  int *meshpartsr2, ***meshstartr2,nmeshr2,meshfacr2, ismall, nrand1_large;
 
   // omp stuff
   int irank, nrank, flag=0;
@@ -192,11 +193,12 @@ int main(int argc, char **argv)
   jackvect = ivector(1,ngal);
   isurvey = ivector(1,ngal);
   gweight = vector(1,ngal);
+  fkp = vector(1,ngal);
   gal_ra = vector(1,ngal);
   gal_dec = vector(1,ngal);
   gal_dec2 = vector(1,ngal);
   gal_z = vector(1,ngal);
-  
+
   // jackknife array
   jackvect = ivector(1,ngal);
 
@@ -208,9 +210,11 @@ int main(int argc, char **argv)
 
   for(j=1;j<=ngal;++j)
     {
-      fscanf(fp,"%f %f %f %f %d",&x1,&y1,&z1,&gweight[j],&isurvey[j]);
+      fscanf(fp,"%f %f %f %f %d %f",&x1,&y1,&z1,&gweight[j],&isurvey[j],&fkp[j]);
       xg[j] = x1;
       yg[j] = y1;
+      //printf("GAL %d %f %f\n",j,gweight[j],fkp[j]);
+      gweight[j] *= fkp[j]; 
 
       jackvect[j] = 1;
       z1 /= SPEED_OF_LIGHT;
@@ -292,6 +296,7 @@ int main(int argc, char **argv)
   ry1 = vector(1,nrand1);
   rz1 = vector(1,nrand1);
   rjackvect = ivector(1,nrand1);
+  randw = vector(1,nrand1);
 
   ran_ra = vector(1,nrand1);
   ran_dec = vector(1,nrand1);
@@ -314,8 +319,7 @@ int main(int argc, char **argv)
       phi = rx1[i]*(PI/180.0);
       theta = PI/2.0 - ry1[i]*(PI/180.0);
       // give this a random redshift from the galaxy sample
-      zz1 = z1 = random_redshift_from_data(ngal,gal_z);
-      
+      zz1 = z1 = random_redshift_from_data(ngal,gal_z,fkp,&randw[i]);
       z1 = redshift_distance(z1);
       fgets(aa,1000,fp);
 
@@ -463,8 +467,8 @@ int main(int argc, char **argv)
   if(CALC_RR_COUNTS) {
     fprintf(stderr,"Calculating RR pairs...\n");
 
-    nrand = imatrix(1,nr,1,nz);
-    nrand_jack = i3tensor(0,njack_tot-1,1,nr,1,nz);
+    nrand = dmatrix(1,nr,1,nz);
+    nrand_jack = d3tensor(0,njack_tot-1,1,nr,1,nz);
     
     for(i=1;i<=nr;++i)
       for(j=1;j<=nz;++j)
@@ -491,7 +495,7 @@ int main(int argc, char **argv)
     */
 
 #pragma omp parallel  shared(rx1,ry1,rz1,meshpartsr, meshstartr,nrand1) \
-  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2,flag)
+  private(nx, nxj, i, j, k, j1, i1, irank, nrank,indx,rsqr,nbrmax,ibin,jbin,dx,dy,dz,lx,ly,lz,pi,phi,r,ctime2,rx2,ry2,rz2,meshpartsr2,meshstartr2, p, ix,iy,iz,iix,iiy,iiz,ir,rmax2,nbr,side,side2,sinv,iiix,iiiy,iiiz,id,id2,flag, weight, rw2,r2)
 {
 
     irank=omp_get_thread_num();
@@ -499,8 +503,8 @@ int main(int argc, char **argv)
     if(!irank)fprintf(stderr,"Num threads: %d %d\n",nrank,nmeshr);
 
     // create local pair count arrays
-    nx = imatrix(1,nr,1,nz);
-    nxj = i3tensor(0,njack_tot-1,1,nr,1,nz);
+    nx = dmatrix(1,nr,1,nz);
+    nxj = d3tensor(0,njack_tot-1,1,nr,1,nz);
     
     for(i1=1;i1<=nr;++i1)
       for(j=1;j<=nz;++j)
@@ -526,24 +530,46 @@ int main(int argc, char **argv)
 	for(k=0;k<nmeshr;++k)
 	  meshstartr2[i][j][k] = meshstartr[i][j][k];
 
+    // make individual position arrays
+    rx2 = vector(1,nrand1);
+    ry2 = vector(1,nrand1);
+    rz2 = vector(1,nrand1);
+    rw2 = vector(1,nrand1);
+    for(i=1;i<=nrand1;++i)
+      {
+	rx2[i] = rx1[i];
+	ry2[i] = ry1[i];
+	rz2[i] = rz1[i];
+	rw2[i] = randw[i];
+      }
+
+    flag = 1;
+    if(!flag) {
+      flag = 1;
+      ctime2 = omp_get_wtime();      
+      printf("TT%d %.2f\n",irank,ctime2-ctime1);
+      fflush(stdout);
+    }
+
+
 #pragma omp barrier
 
     for(i=1+irank;i<=nrand1;i+=nrank) {
       
-      if(i%10000==1 && !irank){ fprintf(stderr,"%d\n",i); }
+      if(i%100000==1 && !irank){ fprintf(stderr,"%d\n",i); }
       nbrmax=nrand1;
-       nbrsfind2(box_min,box_max,rsearch,nmeshr,rx1[i],ry1[i],rz1[i],&nbrmax,indx,rsqr,
-		 &rx1[1],&ry1[1],&rz1[1],meshpartsr,meshstartr,-1);
+      // nbrsfind2(box_min,box_max,rsearch,nmeshr,rx1[i],ry1[i],rz1[i],&nbrmax,indx,rsqr,
+      //	 &rx2[1],&ry2[1],&rz2[1],meshpartsr2,meshstartr2,-1);
 
       //--------------------------
-       /*
+       
       rmax2=rsearch*rsearch;
       nbrmax=0;
       ir=(int)(nmeshr*rsearch/(box_max-box_min))+1;
       
-      ix=(int)(nmeshr*(rx1[i]-box_min)/(box_max-box_min));
-      iy=(int)(nmeshr*(ry1[i]-box_min)/(box_max-box_min));
-      iz=(int)(nmeshr*(rz1[i]-box_min)/(box_max-box_min));
+      ix=(int)(nmeshr*(rx2[i]-box_min)/(box_max-box_min));
+      iy=(int)(nmeshr*(ry2[i]-box_min)/(box_max-box_min));
+      iz=(int)(nmeshr*(rz2[i]-box_min)/(box_max-box_min));
 
       for(iix=-ir;iix<=ir;iix++)
 	for(iiy=-ir;iiy<=ir;iiy++)
@@ -560,13 +586,9 @@ int main(int argc, char **argv)
 		continue;
 	      }
 	      
-	      dx=mabs(rx1[i]-rx1[p+1]) ;
-	      dy=mabs(ry1[i]-ry1[p+1]) ;
-	      dz=mabs(rz1[i]-rz1[p+1]) ;
-	      
-	      dx =10;
-	      dy = 30;
-	      dz = 50;
+	      dx=mabs(rx2[i]-rx2[p+1]) ;
+	      dy=mabs(ry2[i]-ry2[p+1]) ;
+	      dz=mabs(rz2[i]-rz2[p+1]) ;
 	      r2=dx*dx+dy*dy+dz*dz ;
 
 
@@ -584,24 +606,23 @@ int main(int argc, char **argv)
 	      p=meshpartsr2[p];
 	    }
 	  }
-*/
-      //-----------------
 
+      //-----------------
 
       for(j1=0;j1<nbrmax;++j1)
 	{
 	  j = indx[j1]+1;
 	  if(j<=i)continue;
-	  dx = (rx1[i] - rx1[j]);
-	  //if(fabs(dx)>rmax*2)continue; // CHECK: why comment these out?
-	  dy = (ry1[i] - ry1[j]);
+	  dx = (rx2[i] - rx2[j]);
+	  //if(fab2(dx)>rmax*2)continue; // CHECK: why comment these out?
+	  dy = (ry2[i] - ry2[j]);
 	  //if(fabs(dy)>rmax*2)continue;
-	  dz = (rz1[i] - rz1[j]);
+	  dz = (rz2[i] - rz2[j]);
 	  //if(fabs(dz)>rmax*2)continue;
 	  
-	  lx = 0.5*(rx1[i] + rx1[j]);
-	  ly = 0.5*(ry1[i] + ry1[j]);
-	  lz = 0.5*(rz1[i] + rz1[j]);
+	  lx = 0.5*(rx2[i] + rx2[j]);
+	  ly = 0.5*(ry2[i] + ry2[j]);
+	  lz = 0.5*(rz2[i] + rz2[j]);
 
 	  pi = mabs((dx*lx + dy*ly + dz*lz)/sqrt(lx*lx + ly*ly + lz*lz));
 	  r = sqrt(dx*dx + dy*dy + dz*dz);
@@ -619,7 +640,8 @@ int main(int argc, char **argv)
 	  if(jbin<=0)continue;
 	  if(jbin>nz)continue;
 
-	  nx[ibin][jbin]+=1;
+	  weight = rw2[i]*rw2[j];
+	  nx[ibin][jbin]+= weight;
 
 	  // only count this pair if both points within the same subsample
 	  id = rjackvect[i];
@@ -627,8 +649,8 @@ int main(int argc, char **argv)
 	  if(id==-1 || id2==-1)continue;
 	  //if(id==id2) nxj[id2][ibin][jbin]+=1;
 	  //continue;
-	  nxj[id][ibin][jbin]+=1;
-	  if(id!=id2) nxj[id2][ibin][jbin]+=1;
+	  nxj[id][ibin][jbin]+=weight;
+	  if(id!=id2) nxj[id2][ibin][jbin]+=weight;
 	}      
     }
 
@@ -638,14 +660,6 @@ int main(int argc, char **argv)
     free_i3tensor(meshstartr2,0,nmesh-1,0,nmesh-1,0,nmesh-1);
 
     //system("date");
-    flag = 1;
-    if(!flag) {
-      flag = 1;
-      ctime2 = omp_get_wtime();
-      printf("TT%d %.2f\n",irank,ctime2-ctime1);
-      fflush(stdout);
-    }
-
     // now combine all the counts
     #pragma omp critical
     {
@@ -702,15 +716,17 @@ int main(int argc, char **argv)
     }
   fprintf(stderr,"done with galcnt %d %.0f %d\n",ngal,ngalx,j);
 
-  rancnt_jack = ivector(0,njack_tot-1);
+  rancnt_jack = dvector(0,njack_tot-1);
   for(i=0;i<njack_tot;++i)
     rancnt_jack[i] = 0;
 
+  nrandx = 0;
   for(i=1;i<=nrand1;++i)
     {
+      nrandx += randw[i];
       id = rjackvect[i];
       if(id<0)continue;
-      rancnt_jack[id]++;
+      rancnt_jack[id]+=randw[i];
     }
   j=0;
   for(i=0;i<njack_tot;++i)
@@ -912,7 +928,7 @@ int main(int argc, char **argv)
 	if(ibin<=0)continue;
 	if(ibin>nr)continue;
 
-	weight = gweight[i];
+	weight = gweight[i]*randw[j];
 	nd[ibin][jbin]+=weight;
 
 	id = jackvect[i];
@@ -960,8 +976,8 @@ int main(int argc, char **argv)
       for(j=1;j<=nz;++j)
 	{
 	  DD = npairs[i][j]/(1.*ngalx*ngalx/2);
-	  RR = nrand[i][j]/(1.*nrand1*nrand1/2);
-	  DR1 = npairs_dr1[i][j]/(1.*nrand1*ngalx);
+	  RR = nrand[i][j]/(1.*nrandx*nrandx/2);
+	  DR1 = npairs_dr1[i][j]/(1.*nrandx*ngalx);
 	  xi = (DD - 2*DR1 + RR)/RR;
 	  if(xi<-1)xi==-1;
 
@@ -981,7 +997,7 @@ int main(int argc, char **argv)
       for(k=0;k<njack_tot;++k)
 	{
 	  ngal_tmp = ngalx - galcnt_jack[k];
-	  nrand_tmp = nrand1 - rancnt_jack[k];
+	  nrand_tmp = nrandx - rancnt_jack[k];
  	  xi_jack_mono = xi_jack_quad = 0;
 	  for(j=1;j<=nz;++j)
 	    {
@@ -1008,7 +1024,7 @@ int main(int argc, char **argv)
       for(k=0;k<njack_tot;++k)
 	{
 	  ngal_tmp = ngalx - galcnt_jack[k];
-	  nrand_tmp = nrand1 - rancnt_jack[k];
+	  nrand_tmp = nrandx - rancnt_jack[k];
 	  xi_jack_mono = xi_jack_quad = 0;
 	  for(j=1;j<=nz;++j)
 	    {
@@ -1133,15 +1149,18 @@ float angular_separation(float a1, float d1, float a2, float d2)
 	      (sin(d1)*sin(d2) + cos(d1)*cos(d2)*cos(a2-a1)));
 }
 
-float random_redshift_from_data(int n, float *z)
+float random_redshift_from_data(int n, float *z, float *w, float *w0)
 {
+  int ii;
   static int flag=1;
   if(flag)
     {
       srand48(234099);
       flag=0;
     }
-  return z[(int)(drand48()*n)+1];
+  ii = (int)(drand48()*n)+1;
+  *w0 = w[ii];
+  return z[ii];
 }
 
 float collision_weight(float theta, int iflag)

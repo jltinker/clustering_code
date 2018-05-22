@@ -14,9 +14,15 @@ OBJS1722 = ximulti_LS_weight_omp.o  qromo.o midpnt.o polint.o meshlink2.o nbrsfi
 ximulti_LS_weight_omp:	$(OBJS1722)
 	$(CC) -o $@ $(OBJS1722) $(LIB)
 	cp -f $@ $(HOME)/exec/$@
+
 OBJS1722a = ximulti_LS_weight_omp_linear.o  qromo.o midpnt.o polint.o meshlink2.o nbrsfind2.o time.o sort2.o
 ximulti_LS_weight_omp_linear:	$(OBJS1722a)
 	$(CC) -o $@ $(OBJS1722a) $(LIB)
+	cp -f $@ $(HOME)/exec/$@
+
+OBJS1722b = ximulti_LS_weight_omp_linear_test.o  qromo.o midpnt.o polint.o meshlink2.o nbrsfind2.o time.o sort2.o
+ximulti_LS_weight_omp_linear_test:	$(OBJS1722b)
+	$(CC) -o $@ $(OBJS1722b) $(LIB)
 	cp -f $@ $(HOME)/exec/$@
 
 OBJS1723 = wp_LS_weight_xcorr_omp.o  qromo.o midpnt.o polint.o meshlink2.o nbrsfind2.o time.o sort2.o
